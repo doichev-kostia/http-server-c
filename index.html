@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Client</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-stone-700 text-stone-200">
+<main class="px-4 py-3">
+    <h3 class="mb-3 text-xl">Todos</h3>
+    <form id="form" class="flex gap-4">
+        <div class="flex-1">
+            <input type="text" name="name" id="name" placeholder="Todo name"
+                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            <input hidden type="checkbox" name="completed">
+        </div>
+
+        <button type="submit"
+                class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+            Submit
+        </button>
+    </form>
+
+    <section class="mt-8">
+        <ul class="p-0 list-none flex flex-col gap-5" id="todos">
+            <template id="todo">
+                <li class="flex justify-between items-center p-3 bg-stone-100 rounded-xl">
+                    <input class="text-sm bg-stone-100 text-stone-500 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5" name="name" value="todo 1" placeholder="Enter todo name">
+                    <div class="flex gap-2">
+                        <input type="checkbox" name="completed" id="completed" class="px-8">
+                        <button type="button" class="text-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-full text-sm p-2.5 text-center inline-flex items-center">
+                            <svg fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="false">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </li>
+            </template>
+        </ul>
+    </section>
+</main>
+
+
+<script type="module">
+    /**
+     *
+     * @param {FormData} body
+     * @returns {Promise<void>}
+     */
+    async function createTodo(body) {
+        const response = await fetch("http://localhost:8000/api/todos", {
+            method: "POST",
+            body
+        });
+
+        if (!response.ok) {
+            console.error(response)
+            return;
+        }
+
+        const data = await response.json();
+
+        return data;
+    }
+
+    /**
+     *
+     * @param {number} id
+     * @param {object} body
+     * @returns {Promise<void>}
+     */
+    async function updateTodo(id, body) {
+        const response = await fetch(`http://localhost:8000/api/todos/${id}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+            console.error(response)
+            return;
+        }
+
+        const data = await response.json();
+        return data;
+    }
+
+    /**
+     *
+     * @param {number} id
+     * @returns {Promise<void>}
+     */
+    async function deleteTodo(id) {
+        await fetch(`http://localhost:8000/api/todos/${id}`, {
+            method: "DELETE"
+        });
+    }
+
+    /**
+     *
+     * @returns {Promise<{name: string, id: number, completed: boolean}[]>}
+     */
+    async function getTodos() {
+        const todos = [
+            {
+                id: 1,
+                name: "todo 1",
+                completed: false
+            },
+            {
+                id: 2,
+                name: "todo 2",
+                completed: false
+            },
+            {
+                id: 3,
+                name: "todo 3",
+                completed: true
+            }
+
+        ]
+        return todos;
+        const response = await fetch("http://localhost:8000/api/todos", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            console.error(response)
+            return [];
+        }
+
+        const data = await response.json();
+
+        return data;
+    }
+
+
+    const form = document.getElementById('form');
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        await createTodo(formData);
+        event.target.reset();
+    });
+
+    const todoTemplate = document.getElementById("todo");
+    const todosContainer = document.getElementById("todos");
+    const todos = await getTodos();
+
+    todos.forEach((todo) => {
+        const clone = todoTemplate.content.cloneNode(true);
+        const name = clone.querySelector("[name=name]");
+        const completed = clone.querySelector("[name=completed]");
+        const removeButton = clone.querySelector("button");
+        const todoId = todo.id;
+
+        name.value = todo.name;
+        completed.checked = todo.completed;
+
+        name.addEventListener("change", async (event) => {
+            await updateTodo(todoId, {
+                name: event.target.value
+            });
+        });
+
+        completed.addEventListener("change", async (event) => {
+            await updateTodo(todoId, {
+                completed: event.target.checked
+            });
+        });
+
+        removeButton.addEventListener("click", async () => {
+            await deleteTodo(todoId);
+
+            todosContainer.removeChild(clone);
+        });
+
+        todosContainer.appendChild(clone);
+
+    })
+</script>
+</body>
+</html>
